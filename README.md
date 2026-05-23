@@ -256,6 +256,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+<!--
 ## Badge
 <a href="https://glama.ai/mcp/servers/@efforthye/fast-filesystem-mcp">
   <img width="280" height="150" src="https://glama.ai/mcp/servers/@efforthye/fast-filesystem-mcp/badge" />
@@ -265,6 +266,7 @@ limitations under the License.
 </a><br/>
 
 [![Listed on Spark](https://spark.entire.vc/badges/listed.svg)](https://spark.entire.vc/assets/vb-fast-filesystem?utm_source=github&utm_medium=readme)<br/>
+-->
 
 <!-- [![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/eb4a3f2f-f985-4efb-8dc2-3d319cf9b361)<br/> -->
 
