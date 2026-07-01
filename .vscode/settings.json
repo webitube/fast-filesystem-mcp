@@ -1,6 +1,14 @@
 {
     "chat.tools.terminal.autoApprove": {
         "Test-Path": true,
-        "pnpm": true
+        "pnpm": true,
+        "/^python -c \"import scrapling; help\\(scrapling\\.Fetcher\\.get\\)\" 2>&1 \\| Select-Object -First 100$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^python -c \"from scrapling\\.engines\\._browsers\\._types import GetRequestParams; import inspect; print\\(inspect\\.getsource\\(GetRequestParams\\)\\)\" 2>&1 \\| Select-Object -First 150$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }
