@@ -1,0 +1,4 @@
+[submodule "AgentSkills"]
+	path = AgentSkills
+	url = https://github.com/webitube/AgentSkills.git
+	branch = master
