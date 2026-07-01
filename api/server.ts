@@ -8,8 +8,9 @@ const execAsync = promisify(exec);
 // Claude 최적화 설정
 const CLAUDE_MAX_RESPONSE_SIZE = 5 * 1024 * 1024; // 5MB
 const CLAUDE_MAX_CHUNK_SIZE = 2 * 1024 * 1024;    // 2MB
-const CLAUDE_MAX_LINES = 2000;                     // 최대 2000줄
-const CLAUDE_MAX_DIR_ITEMS = 1000;                 // 디렉토리 항목 최대 1000개
+const CLAUDE_MAX_LINES = 2000;
+const CLAUDE_MAX_DIR_ITEMS = 1000;
+const DEFAULT_MAX_DEPTH = 60;
 
 // 기본 허용 디렉토리들
 const DEFAULT_ALLOWED_DIRECTORIES = [
@@ -97,132 +98,132 @@ function truncateContent(content: string, maxSize: number = CLAUDE_MAX_RESPONSE_
 const MCP_TOOLS = [
   {
     name: 'fast_list_allowed_directories',
-    description: '허용된 디렉토리 목록을 조회합니다',
-    inputSchema: { 
-      type: 'object', 
-      properties: {}, 
-      required: [] 
+    description: 'List allowed directories',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
     }
   },
   {
     name: 'fast_read_file',
-    description: '파일을 읽습니다 (청킹 지원)',
+    description: 'Read a file (chunking supported)',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: '읽을 파일 경로' },
-        start_offset: { type: 'number', description: '시작 바이트 위치' },
-        max_size: { type: 'number', description: '읽을 최대 크기' },
-        line_start: { type: 'number', description: '시작 라인 번호' },
-        line_count: { type: 'number', description: '읽을 라인 수' },
-        encoding: { type: 'string', description: '텍스트 인코딩', default: 'utf-8' }
+        path: { type: 'string', description: 'File path to read' },
+        start_offset: { type: 'number', description: 'Starting byte offset' },
+        max_size: { type: 'number', description: 'Maximum size to read' },
+        line_start: { type: 'number', description: 'Starting line number' },
+        line_count: { type: 'number', description: 'Number of lines to read' },
+        encoding: { type: 'string', description: 'Text encoding', default: 'utf-8' }
       },
       required: ['path']
     }
   },
   {
     name: 'fast_write_file',
-    description: '파일을 쓰거나 수정합니다',
+    description: 'Write or modify a file',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: '파일 경로' },
-        content: { type: 'string', description: '파일 내용' },
-        encoding: { type: 'string', description: '텍스트 인코딩', default: 'utf-8' },
-        create_dirs: { type: 'boolean', description: '디렉토리 자동 생성', default: true },
-        append: { type: 'boolean', description: '추가 모드', default: false }
+        path: { type: 'string', description: 'File path' },
+        content: { type: 'string', description: 'File content' },
+        encoding: { type: 'string', description: 'Text encoding', default: 'utf-8' },
+        create_dirs: { type: 'boolean', description: 'Auto-create directories', default: true },
+        append: { type: 'boolean', description: 'Append mode', default: false }
       },
       required: ['path', 'content']
     }
   },
   {
     name: 'fast_list_directory',
-    description: '디렉토리 목록을 조회합니다 (페이징 지원)',
+    description: 'List directory contents (pagination supported)',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: '디렉토리 경로' },
-        page: { type: 'number', description: '페이지 번호', default: 1 },
-        page_size: { type: 'number', description: '페이지당 항목 수' },
-        pattern: { type: 'string', description: '파일명 필터 패턴' },
-        show_hidden: { type: 'boolean', description: '숨김 파일 표시', default: false },
-        sort_by: { type: 'string', description: '정렬 기준', enum: ['name', 'size', 'modified', 'type'], default: 'name' },
-        reverse: { type: 'boolean', description: '역순 정렬', default: false }
+        path: { type: 'string', description: 'Directory path' },
+        page: { type: 'number', description: 'Page number', default: 1 },
+        page_size: { type: 'number', description: 'Items per page' },
+        pattern: { type: 'string', description: 'Filename filter pattern' },
+        show_hidden: { type: 'boolean', description: 'Show hidden files', default: false },
+        sort_by: { type: 'string', description: 'Sort by', enum: ['name', 'size', 'modified', 'type'], default: 'name' },
+        reverse: { type: 'boolean', description: 'Reverse sort order', default: false }
       },
       required: ['path']
     }
   },
   {
     name: 'fast_get_file_info',
-    description: '파일/디렉토리 상세 정보를 조회합니다',
+    description: 'Get detailed file/directory information',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: '조회할 경로' }
+        path: { type: 'string', description: 'Path to query' }
       },
       required: ['path']
     }
   },
   {
     name: 'fast_create_directory',
-    description: '디렉토리를 생성합니다',
+    description: 'Create a directory',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: '생성할 디렉토리 경로' },
-        recursive: { type: 'boolean', description: '재귀적 생성', default: true }
+        path: { type: 'string', description: 'Directory path to create' },
+        recursive: { type: 'boolean', description: 'Create parent directories', default: true }
       },
       required: ['path']
     }
   },
   {
     name: 'fast_search_files',
-    description: '파일을 검색합니다 (이름/내용)',
+    description: 'Search for files (by name/content)',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: '검색할 디렉토리' },
-        pattern: { type: 'string', description: '검색 패턴' },
-        content_search: { type: 'boolean', description: '파일 내용 검색', default: false },
-        case_sensitive: { type: 'boolean', description: '대소문자 구분', default: false },
-        max_results: { type: 'number', description: '최대 결과 수', default: 100 }
+        path: { type: 'string', description: 'Directory to search' },
+        pattern: { type: 'string', description: 'Search pattern' },
+        content_search: { type: 'boolean', description: 'Search file contents', default: false },
+        case_sensitive: { type: 'boolean', description: 'Case sensitive', default: false },
+        max_results: { type: 'number', description: 'Maximum number of results', default: 100 }
       },
       required: ['path', 'pattern']
     }
   },
   {
     name: 'fast_get_directory_tree',
-    description: '디렉토리 트리 구조를 가져옵니다',
+    description: 'Get directory tree structure',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: '루트 디렉토리 경로' },
-        max_depth: { type: 'number', description: '최대 깊이', default: 3 },
-        show_hidden: { type: 'boolean', description: '숨김 파일 표시', default: false },
-        include_files: { type: 'boolean', description: '파일 포함', default: true }
+        path: { type: 'string', description: 'Root directory path' },
+        max_depth: { type: 'number', description: 'Maximum depth', default: 60 },
+        show_hidden: { type: 'boolean', description: 'Show hidden files', default: false },
+        include_files: { type: 'boolean', description: 'Include files', default: true }
       },
       required: ['path']
     }
   },
   {
     name: 'fast_get_disk_usage',
-    description: '디스크 사용량을 조회합니다',
+    description: 'Get disk usage information',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: '조회할 경로', default: '/' }
+        path: { type: 'string', description: 'Path to query', default: '/' }
       }
     }
   },
   {
     name: 'fast_find_large_files',
-    description: '큰 파일들을 찾습니다',
+    description: 'Find large files',
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: '검색할 디렉토리' },
-        min_size: { type: 'string', description: '최소 크기 (예: 100MB, 1GB)', default: '100MB' },
-        max_results: { type: 'number', description: '최대 결과 수', default: 50 }
+        path: { type: 'string', description: 'Directory to search' },
+        min_size: { type: 'string', description: 'Minimum size (e.g., 100MB, 1GB)', default: '100MB' },
+        max_results: { type: 'number', description: 'Maximum number of results', default: 50 }
       },
       required: ['path']
     }
@@ -763,7 +764,7 @@ async function handleSearchFiles(args: any) {
 }
 
 async function handleGetDirectoryTree(args: any) {
-  const { path: rootPath, max_depth = 3, show_hidden = false, include_files = true } = args;
+  const { path: rootPath, max_depth = DEFAULT_MAX_DEPTH, show_hidden = false, include_files = true } = args;
   
   const safePath_resolved = safePath(rootPath);
   

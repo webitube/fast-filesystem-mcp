@@ -57,7 +57,8 @@ const execFileAsync = promisify(execFile);
 // Claude 최적화 설정
 const CLAUDE_MAX_RESPONSE_SIZE = 5 * 1024 * 1024; // 5MB
 const CLAUDE_MAX_CHUNK_SIZE = 2 * 1024 * 1024;    // 2MB
-const CLAUDE_MAX_LINES = 2000;                     // 최대 2000줄
+const CLAUDE_MAX_LINES = 2000;
+const DEFAULT_MAX_DEPTH = 60;
 const CLAUDE_MAX_DIR_ITEMS = 1000;                 // 디렉토리 항목 최대 1000개
 
 // --- Allowed directories are managed centrally in utils.ts.
@@ -545,7 +546,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: 'object',
           properties: {
             path: { type: 'string', description: 'Root directory path' },
-            max_depth: { type: 'number', description: 'Maximum depth', default: 3 },
+            max_depth: { type: 'number', description: 'Maximum depth', default: 60 },
             show_hidden: { type: 'boolean', description: 'Show hidden files', default: false },
             include_files: { type: 'boolean', description: 'Include files in the tree', default: true }
           },
@@ -2149,7 +2150,7 @@ async function handleSearchFiles(args: any) {
 }
 
 async function handleGetDirectoryTree(args: any) {
-  const { path: rootPath, max_depth = 3, show_hidden = false, include_files = true } = args;
+  const { path: rootPath, max_depth = DEFAULT_MAX_DEPTH, show_hidden = false, include_files = true } = args;
 
   const safePath_resolved = safePath(rootPath);
 

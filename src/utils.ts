@@ -30,6 +30,7 @@ export const CLAUDE_MAX_RESPONSE_SIZE = 1024 * 1024; // 1MB
 export const CLAUDE_MAX_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
 export const CLAUDE_MAX_LINES = 2000;
 export const CLAUDE_MAX_DIR_ITEMS = 1000;
+export const DEFAULT_MAX_DEPTH = 60;
 
 // 유틸리티 함수들
 // Runtime-managed allowed directories (start with defaults)
