@@ -205,7 +205,7 @@ function getEmojiGuideline(filePath: string): { shouldAvoidEmojis: boolean; reas
 }
 
 // 유틸리티 함수들
-function isPathAllowed(targetPath: string): boolean { return coreIsPathAllowed(targetPath); }
+function isPathAllowed(targetPath: string): [boolean, string] { return coreIsPathAllowed(targetPath); }
 function safePath(inputPath: string): string { return coreSafePath(inputPath); }
 
 function formatSize(bytes: number): string {
@@ -1378,8 +1378,9 @@ async function handleWriteFile(args: any) {
     targetPath = path.join(process.cwd(), filePath);
   }
 
-  if (!isPathAllowed(targetPath)) {
-    throw new Error(`Access denied to path: ${targetPath}`);
+  const [allowed, debug] = isPathAllowed(targetPath);
+  if (!allowed) {
+    throw new Error(`[index.ts] Access denied to path: ${targetPath}. Debug: ${debug}`);
   }
 
   const resolvedPath = path.resolve(targetPath);
@@ -1470,8 +1471,9 @@ async function handleLargeWriteFile(args: any) {
     targetPath = path.join(process.cwd(), filePath);
   }
 
-  if (!isPathAllowed(targetPath)) {
-    throw new Error(`Access denied to path: ${targetPath}`);
+  const [allowed, debug] = isPathAllowed(targetPath);
+  if (!allowed) {
+    throw new Error(`[index.ts] Access denied to path: ${targetPath}. Debug: ${debug}`);
   }
 
   const resolvedPath = path.resolve(targetPath);
@@ -2192,7 +2194,7 @@ async function handleGetDirectoryTree(args: any) {
           }
         } catch {
           // 권한 없는 디렉토리
-          node.error = 'Access denied';
+          node.error = '[server.ts] Access denied';
         }
       }
 

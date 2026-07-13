@@ -38,7 +38,7 @@ function isPathAllowed(targetPath: string): boolean {
 
 function safePath(inputPath: string): string {
   if (!isPathAllowed(inputPath)) {
-    throw new Error(`Access denied to path: ${inputPath}`);
+    throw new Error(`[server.ts] Access denied to path: ${inputPath}`);
   }
   return path.resolve(inputPath);
 }
@@ -491,7 +491,7 @@ async function handleWriteFile(args: any) {
   }
   
   if (!isPathAllowed(targetPath)) {
-    throw new Error(`Access denied to path: ${targetPath}`);
+    throw new Error(`[server.ts] Access denied to path: ${targetPath}`);
   }
   
   const resolvedPath = path.resolve(targetPath);
@@ -806,7 +806,7 @@ async function handleGetDirectoryTree(args: any) {
           }
         } catch {
           // 권한 없는 디렉토리
-          node.error = 'Access denied';
+          node.error = '[server.ts] Access denied';
         }
       }
       

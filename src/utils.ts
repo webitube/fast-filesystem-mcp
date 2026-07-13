@@ -68,17 +68,25 @@ export function addAllowedDirectories(paths: string[]): { added: string[]; skipp
   return { added, skipped, current: Array.from(allowedDirSet) };
 }
 
-export function isPathAllowed(targetPath: string): boolean {
+export function isPathAllowed(targetPath: string): [boolean, string] {
   const absolutePath = path.resolve(targetPath);
+  const debug = ""; //`absolutePath=${absolutePath}, targetPath=${targetPath}, allowedDirSet=${Array.from(allowedDirSet)}`;
   for (const allowedDir of allowedDirSet) {
-    if (absolutePath.startsWith(path.resolve(allowedDir))) return true;
+    const resolved = path.resolve(allowedDir);
+    // Case-insensitive comparison on Windows (drive letter case may differ)
+    if (process.platform === 'win32') {
+      if (absolutePath.toLowerCase().startsWith(resolved.toLowerCase())) return [true, debug];
+    } else {
+      if (absolutePath.startsWith(resolved)) return [true, debug];
+    }
   }
-  return false;
+  return [false, debug];
 }
 
 export function safePath(inputPath: string): string {
-  if (!isPathAllowed(inputPath)) {
-    throw new Error(`Access denied to path: ${inputPath}`);
+  const [allowed, debug] = isPathAllowed(inputPath);
+  if (!allowed) {
+    throw new Error(`[utils.ts] Access denied to path: ${inputPath}. Debug: ${debug}`);
   }
   return path.resolve(inputPath);
 }
